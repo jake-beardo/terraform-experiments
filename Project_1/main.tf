@@ -5,6 +5,11 @@ provider "aws" {
   secret_key = "9JqM6YU0QV4VpmJg9iExfwv5T2LMvRvEFLUKY0SD"
 }
 
+variable "subnet_prefix" {
+    description = "this representing the cidr block for subnet"
+    default = "10.0.66.0/24"
+    type =   string
+}
 
 # 1. Create vpc
 
@@ -46,7 +51,7 @@ resource "aws_route_table" "prod-route-table" {
 
 resource "aws_subnet" "subnet-1" {
   vpc_id            = aws_vpc.prod-vpc.id
-  cidr_block        = "10.0.1.0/24"
+  cidr_block        = var.subnet_prefix
   availability_zone = "us-east-1a"
 
   tags = {
@@ -99,51 +104,51 @@ resource "aws_security_group" "allow_web" {
   }
 }
 
-# 7. Create a network interface with an ip in the subnet that was created in step 4
+# # 7. Create a network interface with an ip in the subnet that was created in step 4
 
-resource "aws_network_interface" "web-server-nic" {
-  subnet_id       = aws_subnet.subnet-1.id
-  private_ips     = ["10.0.1.50"]
-  security_groups = [aws_security_group.allow_web.id]
+# resource "aws_network_interface" "web-server-nic" {
+#   subnet_id       = aws_subnet.subnet-1.id
+#   private_ips     = ["10.0.1.50"]
+#   security_groups = [aws_security_group.allow_web.id]
 
-}
-# 8. Assign an elastic IP to the network interface created in step 7
+# }
+# # 8. Assign an elastic IP to the network interface created in step 7
 
-resource "aws_eip" "one" {
-  vpc                       = true
-  network_interface         = aws_network_interface.web-server-nic.id
-  associate_with_private_ip = "10.0.1.50"
-  depends_on                = [aws_internet_gateway.gw]
-}
+# resource "aws_eip" "one" {
+#   vpc                       = true
+#   network_interface         = aws_network_interface.web-server-nic.id
+#   associate_with_private_ip = "10.0.1.50"
+#   depends_on                = [aws_internet_gateway.gw]
+# }
 
-output "server_public_ip" {
-  value = aws_eip.one.public_ip
-}
+# output "server_public_ip" {
+#   value = aws_eip.one.public_ip
+# }
 
-# 9. Create Ubuntu server and install/enable apache2
+# # 9. Create Ubuntu server and install/enable apache2
 
-resource "aws_instance" "web-server-instance" {
-  ami               = "ami-0ee23bfc74a881de5"
-  instance_type     = "t2.micro"
-  availability_zone = "us-east-1a"
-  key_name          = "main-key"
+# resource "aws_instance" "web-server-instance" {
+#   ami               = "ami-0ee23bfc74a881de5"
+#   instance_type     = "t2.micro"
+#   availability_zone = "us-east-1a"
+#   key_name          = "main-key"
 
-  network_interface {
-    device_index         = 0
-    network_interface_id = aws_network_interface.web-server-nic.id
-  }
+#   network_interface {
+#     device_index         = 0
+#     network_interface_id = aws_network_interface.web-server-nic.id
+#   }
 
-  user_data = <<-EOF
-                #!/bin/bash
-                sudo apt update -y
-                sudo apt install apache2 -y
-                sudo systemctl start apache2
-                sudo bash -c 'echo your very first web server > /var/www/html/index.html'
-                EOF
-  tags = {
-    Name = "web-server"
-  }
-}
+#   user_data = <<-EOF
+#                 #!/bin/bash
+#                 sudo apt update -y
+#                 sudo apt install apache2 -y
+#                 sudo systemctl start apache2
+#                 sudo bash -c 'echo your very first web server > /var/www/html/index.html'
+#                 EOF
+#   tags = {
+#     Name = "web-server"
+#   }
+# }
 
 #### ---- TEMPLATE ---- ####
 # resource "<provider>_<resource_type>" "name" {
